@@ -1339,7 +1339,7 @@ function renderConfig() {
   });
   html += '</div>';
   html += '<div class="config-add-row">';
-  html += '<input class="form-input" id="novo-analista" placeholder="Nome do novo analista" style="flex:1" onkeydown="if(event.key==='Enter')addAnalista()">';
+  html += '<input class="form-input" id="novo-analista" placeholder="Nome do novo analista" style="flex:1" onkeydown="if(event.key===\'Enter\')addAnalista()">';
   html += '<button class="btn-primary" style="white-space:nowrap;padding:10px 18px" onclick="addAnalista()">+ Adicionar</button>';
   html += '</div></div>';
 
@@ -1357,7 +1357,7 @@ function renderConfig() {
   });
   html += '</div>';
   html += '<div class="config-add-row">';
-  html += '<input class="form-input" id="novo-agendador" placeholder="Nome de quem agenda" style="flex:1" onkeydown="if(event.key==='Enter')addAgendador()">';
+  html += '<input class="form-input" id="novo-agendador" placeholder="Nome de quem agenda" style="flex:1" onkeydown="if(event.key===\'Enter\')addAgendador()">';
   html += '<button class="btn-primary" style="white-space:nowrap;padding:10px 18px" onclick="addAgendador()">+ Adicionar</button>';
   html += '</div></div>';
 
@@ -1425,12 +1425,11 @@ function rebuildFilters() {
   // Reconstrói chips de filtro na agenda
   const wrap = document.getElementById('filters');
   if (!wrap) return;
-  let html = '<button class="filter-chip active" onclick="setAnalista('todos')" id="chip-todos">Todos</button>';
+  let html = `<button class="filter-chip active" onclick="setAnalista('todos')" id="chip-todos">Todos</button>`;
   ANALISTAS.forEach(an => {
-    const cls = an.toLowerCase().replace(/\s+/g,'-');
     html += `<button class="filter-chip" onclick="setAnalista('${an}')" id="chip-${an}">${an}</button>`;
   });
-  html += '<button class="filter-chip" style="border-color:#3ecf7840;color:#3ecf78" onclick="setAnalista('livres')" id="chip-livres">Só livres</button>';
+  html += `<button class="filter-chip" style="border-color:#3ecf7840;color:#3ecf78" onclick="setAnalista('livres')" id="chip-livres">Só livres</button>`;
   wrap.innerHTML = html;
   // Reconstrói grid de analistas no modal
   rebuildAnalistaGrid();
@@ -1439,7 +1438,7 @@ function rebuildFilters() {
 function rebuildAnalistaGrid() {
   const grid = document.getElementById('analista-grid');
   if (!grid) return;
-  let html = '<div class="analista-opt nenhum" onclick="selAnalista('')" id="opt-nenhum">—</div>';
+  let html = `<div class="analista-opt nenhum" onclick="selAnalista('')" id="opt-nenhum">—</div>`;
   ANALISTAS.forEach(an => {
     const cor = CORES_AN[an] || 'var(--accent)';
     html += `<div class="analista-opt" style="color:${cor}" onclick="selAnalista('${an}')" id="opt-${an}">${an}</div>`;
