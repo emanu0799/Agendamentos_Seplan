@@ -34,6 +34,12 @@ window._fb = {
   },
   listenAnalistas: function(cb) {
     firebaseDB.ref('analistas').on('value', snap => { cb(snap.val()); });
+  },
+  saveBloqueios: function(obj) {
+    firebaseDB.ref('bloqueios').set(obj);
+  },
+  listenBloqueios: function(cb) {
+    firebaseDB.ref('bloqueios').on('value', snap => { cb(snap.val()); });
   }
 };
 </script>
@@ -567,6 +573,9 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 
 /* SLOT AGENDADO POR */
 .slot-agendadopor { font-size: 10px; color: var(--muted); margin-top: 1px; font-style: italic; }
+.analista-opt.blocked { opacity: .45; cursor: not-allowed; border-color: var(--border); }
+.livre-avisos { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; padding-bottom: 4px; }
+.livre-row.has-aviso { flex-wrap: wrap; }
 
 /* CONFIG SCREEN */
 .config-wrap { max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
@@ -670,12 +679,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
       <div class="form-group">
         <div class="form-label">Analista responsável</div>
         <div class="analista-grid" id="analista-grid">
-          <div class="analista-opt nenhum" onclick="selAnalista('')" id="opt-nenhum">—</div>
-          <div class="analista-opt" style="color:var(--gabriela)" onclick="selAnalista('Gabriela')" id="opt-Gabriela">Gabriela</div>
-          <div class="analista-opt" style="color:var(--ruy)"      onclick="selAnalista('Ruy')"      id="opt-Ruy">Ruy</div>
-          <div class="analista-opt" style="color:var(--sabrina)"  onclick="selAnalista('Sabrina')"  id="opt-Sabrina">Sabrina</div>
-          <div class="analista-opt" style="color:var(--vera)"     onclick="selAnalista('Vera')"     id="opt-Vera">Vera</div>
-          <div class="analista-opt" style="color:var(--marco)"    onclick="selAnalista('Marco')"    id="opt-Marco">Marco</div>
+          <!-- preenchido dinamicamente por rebuildAnalistaGrid() -->
         </div>
       </div>
     </div>
@@ -789,6 +793,8 @@ function openSlot(dayId, hora) {
   document.getElementById('modal-slot-title').textContent =
     slot.nome ? 'Editar agendamento' : 'Agendar horário';
 
+  // Reconstrói grid com analistas atuais, marcando bloqueados para este dia
+  rebuildAnalistaGrid(dayId);
   selAnalista(slot.analista);
   document.getElementById('overlay-slot').classList.add('open');
   setTimeout(() => document.getElementById('slot-nome').focus(), 200);
@@ -1225,8 +1231,17 @@ function renderLivres() {
     html += `<div class="empty"><div class="empty-icon">✅</div><div class="empty-text">Todos os horários estão preenchidos.</div></div>`;
   } else {
     html += '<div class="livres-grid">';
+    // Agrupa por dia para mostrar avisos
+    const daysSeen = new Set();
     list.forEach(({ day, h }) => {
-      html += `<div class="livre-row">
+      const showDayHeader = !daysSeen.has(day.id);
+      daysSeen.add(day.id);
+      // Avisos do dia
+      const avisoHtml = showDayHeader && day.avisos && day.avisos.length
+        ? `<div class="livre-avisos">${day.avisos.map(av => `<span class="aviso-tag" style="font-size:11px">⚠ ${av}</span>`).join('')}</div>`
+        : '';
+      html += `<div class="livre-row${showDayHeader && day.avisos && day.avisos.length ? ' has-aviso' : ''}">
+        ${avisoHtml}
         <div class="livre-row-date">${day.data}</div>
         <div class="livre-row-day">${day.weekday}</div>
         <div class="livre-row-time">${h}</div>
@@ -1321,6 +1336,58 @@ function initTheme() {
 }
 
 
+
+// ── BLOQUEIO DE ANALISTAS ──────────────────────────────────────────────────
+let BLOQUEIOS = {}; // { "NomeAnalista": [ "DD/MM/YYYY", "DD/MM/YYYY>DD/MM/YYYY", ... ] }
+
+function getBlockedAnalistas(dayId) {
+  const day = DAYS.find(d => d.id === dayId);
+  if (!day) return [];
+  const blocked = [];
+  Object.entries(BLOQUEIOS).forEach(([an, regras]) => {
+    if (!regras) return;
+    const lista = Array.isArray(regras) ? regras : Object.values(regras);
+    for (const regra of lista) {
+      if (regra.includes('>')) {
+        // Período: "DD/MM/YYYY>DD/MM/YYYY"
+        const [ini, fim] = regra.split('>');
+        const d = parseDataBR(day.data);
+        const dIni = parseDataBR(ini); dIni.setHours(0,0,0,0);
+        const dFim = parseDataBR(fim); dFim.setHours(23,59,59,999);
+        if (d >= dIni && d <= dFim) { blocked.push(an); break; }
+      } else {
+        // Dia específico
+        if (regra === day.data) { blocked.push(an); break; }
+      }
+    }
+  });
+  return blocked;
+}
+
+function saveBloqueios() {
+  window._fb.saveBloqueios(BLOQUEIOS);
+}
+
+function adicionarBloqueio(analista, tipo, dataIni, dataFim) {
+  if (!BLOQUEIOS[analista]) BLOQUEIOS[analista] = [];
+  const lista = Array.isArray(BLOQUEIOS[analista]) ? BLOQUEIOS[analista] : Object.values(BLOQUEIOS[analista]);
+  const regra = tipo === 'periodo' ? `${dataIni}>${dataFim}` : dataIni;
+  if (!lista.includes(regra)) lista.push(regra);
+  BLOQUEIOS[analista] = lista;
+  saveBloqueios();
+  toast(`${analista} bloqueado ✓`);
+  renderConfig();
+}
+
+function removerBloqueio(analista, idx) {
+  const lista = Array.isArray(BLOQUEIOS[analista]) ? BLOQUEIOS[analista] : Object.values(BLOQUEIOS[analista]);
+  lista.splice(idx, 1);
+  BLOQUEIOS[analista] = lista;
+  saveBloqueios();
+  toast('Bloqueio removido');
+  renderConfig();
+}
+
 // ── RENDER CONFIG ──────────────────────────────────────────────────────────
 function renderConfig() {
   let html = '<div class="config-wrap">';
@@ -1361,8 +1428,61 @@ function renderConfig() {
   html += '<button class="btn-primary" style="white-space:nowrap;padding:10px 18px" onclick="addAgendador()">+ Adicionar</button>';
   html += '</div></div>';
 
+  // ── Bloqueios ──
+  html += '<div class="config-section">';
+  html += '<div class="config-title">🚫 Bloqueios de Analistas</div>';
+  html += '<div class="config-desc">Bloqueie um analista para um dia específico ou período (ex: férias). Analistas bloqueados aparecem riscados no formulário de agendamento.</div>';
+  let temBloqueio = false;
+  html += '<div class="config-list" style="flex-direction:column;gap:6px">';
+  Object.entries(BLOQUEIOS).forEach(([an, regras]) => {
+    const lista = Array.isArray(regras) ? regras : Object.values(regras || {});
+    lista.forEach((regra, i) => {
+      if (!regra) return;
+      temBloqueio = true;
+      const cor = CORES_AN[an] || 'var(--accent)';
+      const label = regra.includes('>') ? regra.replace('>', ' → ') : regra;
+      const tipo  = regra.includes('>') ? 'período' : 'dia';
+      html += `<div class="config-item" style="background:var(--sabrina-b);border:1px solid var(--border);border-radius:8px;padding:6px 10px;width:100%;justify-content:space-between">
+        <span style="font-size:12px"><span class="config-badge" style="background:var(--border);color:${cor}">${an}</span><span style="color:var(--muted);margin:0 6px">·</span>${label}<span style="font-size:10px;color:var(--muted);margin-left:4px">(${tipo})</span></span>
+        <button class="config-rm" onclick="removerBloqueio('${an}',${i})">×</button>
+      </div>`;
+    });
+  });
+  if (!temBloqueio) html += '<div style="font-size:12px;color:var(--muted)">Nenhum bloqueio ativo.</div>';
+  html += '</div>';
+  html += '<div style="display:flex;flex-direction:column;gap:10px;margin-top:12px">';
+  html += '<div class="config-add-row" style="flex-wrap:wrap;gap:8px">';
+  html += '<select class="form-select" id="bloq-analista" style="flex:1;min-width:120px"><option value="">Analista...</option>';
+  ANALISTAS.forEach(an => { html += `<option value="${an}">${an}</option>`; });
+  html += '</select>';
+  html += '<select class="form-select" id="bloq-tipo" style="flex:1;min-width:140px" onchange="toggleBloqFim()"><option value="dia">Dia específico</option><option value="periodo">Período</option></select>';
+  html += '</div>';
+  html += '<div class="config-add-row" style="flex-wrap:wrap;gap:8px">';
+  html += '<div style="flex:1;min-width:120px"><div style="font-size:10px;color:var(--muted);margin-bottom:4px">Data início</div><input class="form-input" id="bloq-ini" type="date"></div>';
+  html += '<div style="flex:1;min-width:120px" id="bloq-fim-wrap" style="display:none"><div style="font-size:10px;color:var(--muted);margin-bottom:4px">Data fim</div><input class="form-input" id="bloq-fim" type="date"></div>';
+  html += '<button class="btn-primary" style="align-self:flex-end;padding:10px 16px;white-space:nowrap" onclick="salvarBloqueio()">🚫 Bloquear</button>';
+  html += '</div></div></div>';
+
   html += '</div>';
   document.getElementById('view-config').innerHTML = html;
+  toggleBloqFim();
+}
+
+function toggleBloqFim() {
+  const tipo = document.getElementById('bloq-tipo')?.value;
+  const wrap = document.getElementById('bloq-fim-wrap');
+  if (wrap) wrap.style.display = tipo === 'periodo' ? 'block' : 'none';
+}
+
+function salvarBloqueio() {
+  const an   = document.getElementById('bloq-analista')?.value;
+  const tipo = document.getElementById('bloq-tipo')?.value;
+  const ini  = document.getElementById('bloq-ini')?.value;
+  const fim  = document.getElementById('bloq-fim')?.value;
+  if (!an)  { toast('Selecione o analista', true); return; }
+  if (!ini) { toast('Informe a data início', true); return; }
+  if (tipo === 'periodo' && !fim) { toast('Informe a data fim', true); return; }
+  adicionarBloqueio(an, tipo, dateToDDMMYYYY(ini), tipo === 'periodo' ? dateToDDMMYYYY(fim) : '');
 }
 
 // ── CONFIG HELPERS ──────────────────────────────────────────────────────────
@@ -1435,13 +1555,23 @@ function rebuildFilters() {
   rebuildAnalistaGrid();
 }
 
-function rebuildAnalistaGrid() {
+function rebuildAnalistaGrid(dayId) {
   const grid = document.getElementById('analista-grid');
   if (!grid) return;
+  // Descobre analistas bloqueados para este dia
+  const blocked = dayId ? getBlockedAnalistas(dayId) : [];
   let html = `<div class="analista-opt nenhum" onclick="selAnalista('')" id="opt-nenhum">—</div>`;
   ANALISTAS.forEach(an => {
     const cor = CORES_AN[an] || 'var(--accent)';
-    html += `<div class="analista-opt" style="color:${cor}" onclick="selAnalista('${an}')" id="opt-${an}">${an}</div>`;
+    const isBlocked = blocked.includes(an);
+    if (isBlocked) {
+      html += `<div class="analista-opt blocked" id="opt-${an}" title="${an} bloqueado neste dia">
+        <span style="text-decoration:line-through;opacity:.5">${an}</span>
+        <span style="font-size:9px;color:var(--danger)">🚫</span>
+      </div>`;
+    } else {
+      html += `<div class="analista-opt" style="color:${cor}" onclick="selAnalista('${an}')" id="opt-${an}">${an}</div>`;
+    }
   });
   grid.innerHTML = html;
 }
@@ -1460,7 +1590,18 @@ document.getElementById('view-agenda').innerHTML = `
 window._fb.listenAnalistas(function(data) {
   if (data && Array.isArray(data) && data.length > 0) {
     ANALISTAS = data;
+    rebuildFilters();
   }
+});
+
+// Listener bloqueios do Firebase
+window._fb.listenBloqueios(function(data) {
+  BLOQUEIOS = data || {};
+});
+
+// Listener bloqueios do Firebase
+window._fb.listenBloqueios(function(data) {
+  BLOQUEIOS = data || {};
 });
 
 // Listener Firebase em tempo real
@@ -1476,8 +1617,8 @@ window._fb.listenDays(function(data) {
         const slots = {};
         HORARIOS.forEach(h => {
           const s = day.slots && day.slots[h];
-          slots[h] = s ? { nome: s.nome||'', assunto: s.assunto||'', analista: s.analista||'' }
-                      : { nome:'', assunto:'', analista:'' };
+          slots[h] = s ? { nome: s.nome||'', assunto: s.assunto||'', analista: s.analista||'', agendadopor: s.agendadopor||'' }
+                      : { nome:'', assunto:'', analista:'', agendadopor:'' };
         });
         return { ...day, avisos, slots };
       })
