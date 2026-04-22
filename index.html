@@ -28,12 +28,6 @@ window._fb = {
       obj[key] = d;
     });
     firebaseDB.ref(DB_PATH).set(obj);
-  },
-  saveAnalistas: function(list) {
-    firebaseDB.ref('analistas').set(list);
-  },
-  listenAnalistas: function(cb) {
-    firebaseDB.ref('analistas').on('value', snap => { cb(snap.val()); });
   }
 };
 </script>
@@ -565,21 +559,6 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* SLOT AGENDADO POR */
-.slot-agendadopor { font-size: 10px; color: var(--muted); margin-top: 1px; font-style: italic; }
-
-/* CONFIG SCREEN */
-.config-wrap { max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
-.config-section { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
-.config-title { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
-.config-desc { font-size: 12px; color: var(--muted); margin-bottom: 16px; line-height: 1.5; }
-.config-list { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; min-height: 36px; }
-.config-item { display: flex; align-items: center; gap: 6px; }
-.config-badge { padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; }
-.config-rm { background: transparent; border: none; color: var(--muted); cursor: pointer; font-size: 16px; line-height: 1; padding: 2px 4px; border-radius: 4px; transition: all .15s; }
-.config-rm:hover { background: var(--sabrina-b); color: var(--sabrina); }
-.config-add-row { display: flex; gap: 10px; align-items: center; }
-
 @media (max-width: 600px) {
   .main { padding: 12px; }
   .slot { grid-template-columns: 60px 1fr auto; }
@@ -619,7 +598,6 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
   <button class="nav-btn active" onclick="setView('agenda')"  id="btn-agenda">Agenda</button>
   <button class="nav-btn"        onclick="setView('painel')"  id="btn-painel">Painel Geral</button>
   <button class="nav-btn"        onclick="setView('livres')"  id="btn-livres">Horários Livres</button>
-  <button class="nav-btn"        onclick="setView('config')"  id="btn-config">⚙ Configurações</button>
 </div>
 
 <div class="main">
@@ -637,7 +615,6 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
   <div id="view-agenda"></div>
   <div id="view-painel" style="display:none"></div>
   <div id="view-livres" style="display:none"></div>
-  <div id="view-config" style="display:none"></div>
 </div>
 
 <!-- MODAL AGENDAMENTO -->
@@ -662,10 +639,6 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
       <div class="form-group">
         <div class="form-label">Protocolo / Assunto</div>
         <input class="form-input" id="slot-assunto" placeholder="Ex: 12345/2026">
-      </div>
-      <div class="form-group">
-        <div class="form-label">Agendado por</div>
-        <input class="form-input" id="slot-agendadopor" placeholder="Ex: Emanuel" autocomplete="off">
       </div>
       <div class="form-group">
         <div class="form-label">Analista responsável</div>
@@ -723,7 +696,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 <script>
 // ── DADOS BASE ─────────────────────────────────────────────────────────────
 const HORARIOS = ["08:30","09:00","09:30","10:00","10:30","11:00","11:30"];
-let ANALISTAS = ["Gabriela","Ruy","Sabrina","Vera","Marco","Andressa"];
+const ANALISTAS = ["Gabriela","Ruy","Sabrina","Vera","Marco"];
 
 const BASE_DAYS = [{"id":"TERÇA 0601","data":"06/01/2026","weekday":"TERÇA-FEIRA","avisos":[],"slots":{"08:30":{"nome":"Sidnei KZA","assunto":"5538/2025 - Ruy","analista":"Ruy"},"09:00":{"nome":"","assunto":"","analista":""},"09:30":{"nome":"Ronaldo","assunto":"43278/2025 - Ruy","analista":"Ruy"},"10:00":{"nome":"","assunto":"","analista":""},"10:30":{"nome":"","assunto":"","analista":""},"11:00":{"nome":"Pedro Henrique","assunto":"41825/2025 - Ruy","analista":"Ruy"},"11:30":{"nome":"","assunto":"","analista":""}}},{"id":"QUINTA 0801","data":"08/01/2026","weekday":"QUINTA-FEIRA","avisos":[],"slots":{"08:30":{"nome":"Jean Ricardo","assunto":"47110/2025 - Sabrina","analista":"Sabrina"},"09:00":{"nome":"Pedro Henrique","assunto":"11283/2025 - Gabriela","analista":"Gabriela"},"09:30":{"nome":"Kaique","assunto":"39977/2025 - Gabriela","analista":"Gabriela"},"10:00":{"nome":"Lucas","assunto":"35064/2025 - Gabriela","analista":"Gabriela"},"10:30":{"nome":"Gabriel","assunto":"36604/2025 - Gabriela","analista":"Gabriela"},"11:00":{"nome":"","assunto":"","analista":""},"11:30":{"nome":"","assunto":"","analista":""}}},{"id":"TERÇA 1301","data":"13/01/2026","weekday":"TERÇA-FEIRA","avisos":[],"slots":{"08:30":{"nome":"Rosangela Pepe","assunto":"32689/2025 - Gabriela","analista":"Gabriela"},"09:00":{"nome":"Adriano","assunto":"28231/2025 - Ruy","analista":"Ruy"},"09:30":{"nome":"Amabile","assunto":"40041/2025 - Gabriela","analista":"Gabriela"},"10:00":{"nome":"Adalberto","assunto":"12536/2025 - Sabrina","analista":"Sabrina"},"10:30":{"nome":"","assunto":"","analista":""},"11:00":{"nome":"","assunto":"","analista":""},"11:30":{"nome":"","assunto":"","analista":""}}},{"id":"QUINTA 1501","data":"15/01/2026","weekday":"QUINTA-FEIRA","avisos":[],"slots":{"08:30":{"nome":"Sidnei","assunto":"10696/2025 - Gabriela","analista":"Gabriela"},"09:00":{"nome":"Danilo","assunto":"26911/2025 - Gabriela","analista":"Gabriela"},"09:30":{"nome":"David","assunto":"26541- Gabriela","analista":"Gabriela"},"10:00":{"nome":"","assunto":"","analista":""},"10:30":{"nome":"","assunto":"","analista":""},"11:00":{"nome":"","assunto":"","analista":""},"11:30":{"nome":"","assunto":"","analista":""}}},{"id":"TERÇA 2001","data":"20/01/2026","weekday":"TERÇA-FEIRA","avisos":[],"slots":{"08:30":{"nome":"Jennifer","assunto":"41153/2025 - Sabrina","analista":"Sabrina"},"09:00":{"nome":"Bruna","assunto":"41938/2025 - Sabrina","analista":"Sabrina"},"09:30":{"nome":"Danyelly Barbosa","assunto":"15002/2025 - Ruy","analista":"Ruy"},"10:00":{"nome":"André Luiz","assunto":"17606/2025 - Gabriela","analista":"Gabriela"},"10:30":{"nome":"Jonas","assunto":"32143/2025 - Sabrina","analista":"Sabrina"},"11:00":{"nome":"Priscila Rodrigues","assunto":"43049/2025 - Gabriela","analista":"Gabriela"},"11:30":{"nome":"Fernando Mazao / Tainara","assunto":"35019/2025 - Ruy","analista":"Ruy"}}},{"id":"QUINTA 2201","data":"22/01/2026","weekday":"QUINTA-FEIRA","avisos":["Férias Gabriela"],"slots":{"08:30":{"nome":"Akes","assunto":"40333/2025","analista":""},"09:00":{"nome":"Shark","assunto":"44528/2025 - Vera","analista":"Vera"},"09:30":{"nome":"Ariel Augusto Hille","assunto":"40892/2025 - Ruy","analista":"Ruy"},"10:00":{"nome":"Thaiss e Aníbal","assunto":"19852/2025 - Ruy","analista":"Ruy"},"10:30":{"nome":"Mariana","assunto":"2397/2025 - Vera","analista":"Vera"},"11:00":{"nome":"","assunto":"","analista":""},"11:30":{"nome":"Katuana","assunto":"25799/2025 - Marco","analista":"Marco"}}},{"id":"TERÇA 2701","data":"27/01/2026","weekday":"TERÇA-FEIRA","avisos":["Férias Gabriela"],"slots":{"08:30":{"nome":"","assunto":"","analista":""},"09:00":{"nome":"Douglas","assunto":"47415/2025 - Sabrina","analista":"Sabrina"},"09:30":{"nome":"","assunto":"","analista":""},"10:00":{"nome":"","assunto":"","analista":""},"10:30":{"nome":"","assunto":"","analista":""},"11:00":{"nome":"Juan Pianecer","assunto":"37550/2025 - Ruy","analista":"Ruy"},"11:30":{"nome":"Juan Pianecer","assunto":"25799/2025 - Marco","analista":"Marco"}}},{"id":"QUINTA 2901","data":"29/01/2026","weekday":"QUINTA-FEIRA","avisos":["Férias Gabriela"],"slots":{"08:30":{"nome":"","assunto":"","analista":""},"09:00":{"nome":"Liziane","assunto":"44095/2025 - Sabrina","analista":"Sabrina"},"09:30":{"nome":"Fernando","assunto":"47431/2025 - Vera","analista":"Vera"},"10:00":{"nome":"Djionas","assunto":"38902/2025 - Vera","analista":"Vera"},"10:30":{"nome":"","assunto":"","analista":""},"11:00":{"nome":"","assunto":"","analista":""},"11:30":{"nome":"","assunto":"","analista":""}}},{"id":"TERÇA 0302","data":"03/02/2026","weekday":"TERÇA-FEIRA","avisos":[],"slots":{"08:30":{"nome":"Ralf / Arnaldo Bosco Câmera","assunto":"32804/2025 - Gabriela","analista":"Gabriela"},"09:00":{"nome":"Gabriel","assunto":"36604/2025 - Gabriela","analista":"Gabriela"},"09:30":{"nome":"Alexandre","assunto":"31623/2025 - Sabrina","analista":"Sabrina"},"10:00":{"nome":"Rogga","assunto":"36260/2025 - Ruy","analista":"Ruy"},"10:30":{"nome":"Akes","assunto":"40220/2025 - Ruy","analista":"Ruy"},"11:00":{"nome":"Alex","assunto":"48780/2025 - Sabrina","analista":"Sabrina"},"11:30":{"nome":"Mariana Vetter","assunto":"2397/2025 - Vera","analista":"Vera"}}},{"id":"QUINTA 0502","data":"05/02/2026","weekday":"QUINTA-FEIRA","avisos":[],"slots":{"08:30":{"nome":"Thais","assunto":"20037/2025 - Gabriela","analista":"Gabriela"},"09:00":{"nome":"Rogga","assunto":"36260/2025 - Ruy","analista":"Ruy"},"09:30":{"nome":"Rogga","assunto":"46608 e 46407/2025 - Vera","analista":"Vera"},"10:00":{"nome":"Leandro","assunto":"22266/2025 - Gabriela","analista":"Gabriela"},"10:30":{"nome":"Wgb","assunto":"38495/2025 - Gabriela","analista":"Gabriela"},"11:00":{"nome":"","assunto":"","analista":""},"11:30":{"nome":"","assunto":"","analista":""}}},{"id":"TERÇA 1002","data":"10/02/2026","weekday":"TERÇA-FEIRA","avisos":[],"slots":{"08:30":{"nome":"Kassio","assunto":"45932/2025 - Sabrina","analista":"Sabrina"},"09:00":{"nome":"Priscila","assunto":"35330/2025 - Marco","analista":"Marco"},"09:30":{"nome":"Emanuelly","assunto":"22448/2025 - Gabriela","analista":"Gabriela"},"10:00":{"nome":"Edson","assunto":"41637/2025 - Marco","analista":"Marco"},"10:30":{"nome":"Brunna","assunto":"21028/2025 - Sabrina","analista":"Sabrina"},"11:00":{"nome":"Annie","assunto":"39994/2025 - Marco","analista":"Marco"},"11:30":{"nome":"Arnaldo","assunto":"12094/2025 - Gabriela","analista":"Gabriela"}}},{"id":"QUINTA 1202","data":"12/02/2026","weekday":"QUINTA-FEIRA","avisos":[],"slots":{"08:30":{"nome":"Mayron","assunto":"2459/2026 - Vera","analista":"Vera"},"09:00":{"nome":"","assunto":"","analista":""},"09:30":{"nome":"","assunto":"","analista":""},"10:00":{"nome":"","assunto":"","analista":""},"10:30":{"nome":"","assunto":"","analista":""},"11:00":{"nome":"","assunto":"","analista":""},"11:30":{"nome":"Maiã Priscila Kohls","assunto":"26541/2025 - Gabriela","analista":"Gabriela"}}},{"id":"QUINTA 1902","data":"19/02/2026","weekday":"QUINTA-FEIRA","avisos":[],"slots":{"08:30":{"nome":"Katuana","assunto":"8875/2025 - Marco","analista":"Marco"},"09:00":{"nome":"Liziane","assunto":"35621/2025 - Ruy","analista":"Ruy"},"09:30":{"nome":"Douglas","assunto":"13243/2025 - Gabriela","analista":"Gabriela"},"10:00":{"nome":"Liziani","assunto":"17601/2025 - Sabrina","analista":"Sabrina"},"10:30":{"nome":"Ottavio","assunto":"30237/2025 - Marco","analista":"Marco"},"11:00":{"nome":"Duda","assunto":"39677/2025 - Gabriela","analista":"Gabriela"},"11:30":{"nome":"EDSON HAGEMANN","assunto":"14813/2025 - Gabriela","analista":"Gabriela"}}},{"id":"TERÇA 2402","data":"24/02/2026","weekday":"TERÇA-FEIRA","avisos":[],"slots":{"08:30":{"nome":"Elço Poleza","assunto":"3158/2026 - Sabrina","analista":"Sabrina"},"09:00":{"nome":"Giovanni Minatti","assunto":"38089/2025 - Gabriela","analista":"Gabriela"},"09:30":{"nome":"Dionel","assunto":"EIV - Azure (Frechal) - Vera","analista":"Vera"},"10:00":{"nome":"","assunto":"","analista":""},"10:30":{"nome":"Mayron Rodrigo","assunto":"15491/2025 - Marco","analista":"Marco"},"11:00":{"nome":"Jonathan","assunto":"13819/2025 - Sabrina","analista":"Sabrina"},"11:30":{"nome":"","assunto":"","analista":""}}},{"id":"QUINTA 2602","data":"26/02/2026","weekday":"QUINTA-FEIRA","avisos":[],"slots":{"08:30":{"nome":"Maria Eduarda","assunto":"39677/2025 - Gabriela","analista":"Gabriela"},"09:00":{"nome":"","assunto":"","analista":""},"09:30":{"nome":"","assunto":"","analista":""},"10:00":{"nome":"Paulo","assunto":"30139/2025 - Marco","analista":"Marco"},"10:30":{"nome":"","assunto":"","analista":""},"11:00":{"nome":"","assunto":"","analista":""},"11:30":{"nome":"","assunto":"","analista":""}}},{"id":"TERÇA 0303","data":"03/03/2026","weekday":"TERÇA-FEIRA","avisos":["Emanuel","Carol"],"slots":{"08:30":{"nome":"Lizi","assunto":"28485/2025 - Gabriela","analista":"Gabriela"},"09:00":{"nome":"Dani Ferretti","assunto":"43145/2025 - Gabriela","analista":"Gabriela"},"09:30":{"nome":"Jannice","assunto":"1998/2026 - Gabriela","analista":"Gabriela"},"10:00":{"nome":"João Delgado","assunto":"26101/2025 - Ruy","analista":"Ruy"},"10:30":{"nome":"WGB - Greici","assunto":"40178/2025 - Sabrina","analista":"Sabrina"},"11:00":{"nome":"Igor","assunto":"45531/2025 - Gabriela","analista":"Gabriela"},"11:30":{"nome":"Jonathan Gomes","assunto":"4206/2026 - Marco","analista":"Marco"}}},{"id":"QUINTA 0503","data":"05/03/2026","weekday":"QUINTA-FEIRA","avisos":[],"slots":{"08:30":{"nome":"Wesley","assunto":"43822/2025 - Gabriela","analista":"Gabriela"},"09:00":{"nome":"Augusto","assunto":"37585/2025 - Sabrina","analista":"Sabrina"},"09:30":{"nome":"Marina","assunto":"17606/2025 - Gabriela","analista":"Gabriela"},"10:00":{"nome":"Paulo Rosa","assunto":"3467/2026 - Marco","analista":"Marco"},"10:30":{"nome":"Jocinei","assunto":"21738/2024 - Gabriela","analista":"Gabriela"},"11:00":{"nome":"Augusto","assunto":"43278/2025 - Ruy","analista":"Ruy"},"11:30":{"nome":"Djionas Antônio Paludo","assunto":"17606/2025 - Gabriela","analista":"Gabriela"}}},{"id":"TERÇA 1003","data":"10/03/2026","weekday":"TERÇA-FEIRA","avisos":[],"slots":{"08:30":{"nome":"Paulo Roberto da Rosa","assunto":"3467/2026 - Marco","analista":"Marco"},"09:00":{"nome":"Arnaldo Bosco","assunto":"3624/2026 - Ruy","analista":"Ruy"},"09:30":{"nome":"Cássia","assunto":"7817/2026 - Sabrina","analista":"Sabrina"},"10:00":{"nome":"Danilo","assunto":"26911/2025 - Gabriela","analista":"Gabriela"},"10:30":{"nome":"Leo Souza","assunto":"31515/2025 - Sabrina","analista":"Sabrina"},"11:00":{"nome":"Joice","assunto":"41637/2025 - Marco","analista":"Marco"},"11:30":{"nome":"","assunto":"","analista":""}}},{"id":"QUINTA 1203","data":"12/03/2026","weekday":"QUINTA-FEIRA","avisos":[],"slots":{"08:30":{"nome":"Lizi","assunto":"17606/2025 - Gabriela","analista":"Gabriela"},"09:00":{"nome":"","assunto":"","analista":""},"09:30":{"nome":"Tainara","assunto":"35416/2025 - Ruy","analista":"Ruy"},"10:00":{"nome":"Tainara","assunto":"901/2025 - Sabrina","analista":"Sabrina"},"10:30":{"nome":"Antonio","assunto":"45521/2025 - Marco","analista":"Marco"},"11:00":{"nome":"David","assunto":"26541/2025 - Gabriela","analista":"Gabriela"},"11:30":{"nome":"Eng. Adriano","assunto":"28231/2025","analista":""}}},{"id":"TERÇA 1703","data":"17/03/2026","weekday":"TERÇA-FEIRA","avisos":[],"slots":{"08:30":{"nome":"","assunto":"","analista":""},"09:00":{"nome":"Eng Valdecir Nogueira","assunto":"4252/2026 - Sabrina","analista":"Sabrina"},"09:30":{"nome":"Tainara","assunto":"9911/2024 - Sabrina","analista":"Sabrina"},"10:00":{"nome":"Jannice","assunto":"41969/2025 - Gabriela","analista":"Gabriela"},"10:30":{"nome":"Rogga","assunto":"46407/2025 - Vera","analista":"Vera"},"11:00":{"nome":"Rogga","assunto":"46608/2025 - Vera","analista":"Vera"},"11:30":{"nome":"RKA arquitetura","assunto":"26911/2025 - Gabriela","analista":"Gabriela"}}},{"id":"QUINTA 1903","data":"19/03/2026","weekday":"QUINTA-FEIRA","avisos":["Não marcar nada para a Vera"],"slots":{"08:30":{"nome":"JHONATHAN","assunto":"4206/2026 - Marco","analista":"Marco"},"09:00":{"nome":"Rogga","assunto":"15002/2025 - Ruy","analista":"Ruy"},"09:30":{"nome":"Lucas","assunto":"38945/2025 - Gabriela","analista":"Gabriela"},"10:00":{"nome":"Lizi","assunto":"7503/2026 - Gabriela","analista":"Gabriela"},"10:30":{"nome":"Gerson","assunto":"40142/2025 - Gabriela","analista":"Gabriela"},"11:00":{"nome":"David","assunto":"26541/2025 - Gabriela","analista":"Gabriela"},"11:30":{"nome":"WGB","assunto":"6650/2026 - Gabriela","analista":"Gabriela"}}},{"id":"TERÇA 2403","data":"24/03/2026","weekday":"TERÇA-FEIRA","avisos":["Não marcar com o Ruy"],"slots":{"08:30":{"nome":"WGB","assunto":"5478/2026 - Gabriela","analista":"Gabriela"},"09:00":{"nome":"ENG ALAN","assunto":"38629/2025 - Ruy","analista":"Ruy"},"09:30":{"nome":"Douglas Vinicius","assunto":"7913/2026 - Gabriela","analista":"Gabriela"},"10:00":{"nome":"Rogga","assunto":"46407/2025 - Vera","analista":"Vera"},"10:30":{"nome":"Douglas","assunto":"36986/2025 - Sabrina","analista":"Sabrina"},"11:00":{"nome":"Cleber","assunto":"36696/2025 - Marco","analista":"Marco"},"11:30":{"nome":"Gerson","assunto":"40142/2025 - Gabriela","analista":"Gabriela"}}},{"id":"QUINTA 2603","data":"26/03/2026","weekday":"QUINTA-FEIRA","avisos":["Não marcar nada para a Vera","Não marcar nada para a Gabriela/Sabrina"],"slots":{"08:30":{"nome":"Jannice","assunto":"1998/2026 - Gabriela","analista":"Gabriela"},"09:00":{"nome":"Vetter","assunto":"4114/2026 - Gabriela","analista":"Gabriela"},"09:30":{"nome":"Alexssandro","assunto":"6994/2026 - Sabrina","analista":"Sabrina"},"10:00":{"nome":"Douglas","assunto":"36986/2025 - Sabrina","analista":"Sabrina"},"10:30":{"nome":"Derner","assunto":"Gabriela","analista":"Gabriela"},"11:00":{"nome":"","assunto":"","analista":""},"11:30":{"nome":"","assunto":"","analista":""}}},{"id":"TERÇA 3103","data":"31/03/2026","weekday":"TERÇA-FEIRA","avisos":[],"slots":{"08:30":{"nome":"Vetter","assunto":"4114/2026 - Gabriela","analista":"Gabriela"},"09:00":{"nome":"Arnon Cardoso Cornette","assunto":"43822/2025 - Gabriela","analista":"Gabriela"},"09:30":{"nome":"Cleber e Clodoaldo","assunto":"36696/2025 - Marco","analista":"Marco"},"10:00":{"nome":"Adrieli","assunto":"45508/2025 - Ruy","analista":"Ruy"},"10:30":{"nome":"Fernando Luz","assunto":"19476/2025","analista":""},"11:00":{"nome":"Barbara","assunto":"34397/2025","analista":""},"11:30":{"nome":"Akes","assunto":"8928/2026","analista":""}}},{"id":"QUINTA 0204","data":"02/04/2026","weekday":"QUINTA-FEIRA","avisos":[],"slots":{"08:30":{"nome":"Dionel","assunto":"Frechal - Gabriela","analista":"Gabriela"},"09:00":{"nome":"Gabriela - WGB Engenharia","assunto":"5159/2026 - Ruy","analista":"Ruy"},"09:30":{"nome":"Lizi","assunto":"7503/2026 - Gabriela","analista":"Gabriela"},"10:00":{"nome":"Liege Scremin","assunto":"9640/2026","analista":""},"10:30":{"nome":"Natalino Fuck","assunto":"4206/2026 - Marco","analista":"Marco"},"11:00":{"nome":"","assunto":"","analista":""},"11:30":{"nome":"","assunto":"","analista":""}}},{"id":"TERÇA 0704","data":"07/04/2026","weekday":"TERÇA-FEIRA","avisos":[],"slots":{"08:30":{"nome":"Amanda e Mayara","assunto":"22181/2024 - Vera","analista":"Vera"},"09:00":{"nome":"Gabriela","assunto":"40650/2025 - Gabriela","analista":"Gabriela"},"09:30":{"nome":"Julian","assunto":"36700/2025 - Ruy","analista":"Ruy"},"10:00":{"nome":"Vetter","assunto":"48862/2025 - Ruy","analista":"Ruy"},"10:30":{"nome":"","assunto":"","analista":""},"11:00":{"nome":"","assunto":"","analista":""},"11:30":{"nome":"","assunto":"","analista":""}}},{"id":"QUINTA 0904","data":"09/04/2026","weekday":"QUINTA-FEIRA","avisos":[],"slots":{"08:30":{"nome":"WGB","assunto":"5478/2026 - Gabriela","analista":"Gabriela"},"09:00":{"nome":"","assunto":"","analista":""},"09:30":{"nome":"","assunto":"","analista":""},"10:00":{"nome":"","assunto":"","analista":""},"10:30":{"nome":"","assunto":"","analista":""},"11:00":{"nome":"","assunto":"","analista":""},"11:30":{"nome":"Joice","assunto":"3459/2026 - Gabriela","analista":"Gabriela"}}},{"id":"TERÇA 1404","data":"14/04/2026","weekday":"TERÇA-FEIRA","avisos":["Emanuel","Sabrina"],"slots":{"08:30":{"nome":"Lizi","assunto":"8636/2026 - Sabrina","analista":"Sabrina"},"09:00":{"nome":"Jannice","assunto":"8353/2026 - Ruy","analista":"Ruy"},"09:30":{"nome":"Rauf","assunto":"48876/2025 - Marco","analista":"Marco"},"10:00":{"nome":"Edilaine","assunto":"40270/2025 - Gabriela","analista":"Gabriela"},"10:30":{"nome":"Tainara Manorov","assunto":"2072/2026 - Marco","analista":"Marco"},"11:00":{"nome":"","assunto":"","analista":""},"11:30":{"nome":"","assunto":"","analista":""}}},{"id":"QUINTA 1604","data":"16/04/2026","weekday":"QUINTA-FEIRA","avisos":[],"slots":{"08:30":{"nome":"J&I administradora de bens","assunto":"31623/2025 - Sabrina","analista":"Sabrina"},"09:00":{"nome":"","assunto":"","analista":""},"09:30":{"nome":"","assunto":"","analista":""},"10:00":{"nome":"","assunto":"","analista":""},"10:30":{"nome":"","assunto":"","analista":""},"11:00":{"nome":"","assunto":"","analista":""},"11:30":{"nome":"","assunto":"","analista":""}}},{"id":"TERÇA 2804","data":"28/04/2026","weekday":"TERÇA-FEIRA","avisos":["NÃO AGENDAR GABRIELA"],"slots":{"08:30":{"nome":"","assunto":"","analista":""},"09:00":{"nome":"ROSANE","assunto":"36717/2025 - Gabriela","analista":"Gabriela"},"09:30":{"nome":"","assunto":"","analista":""},"10:00":{"nome":"","assunto":"","analista":""},"10:30":{"nome":"","assunto":"","analista":""},"11:00":{"nome":"","assunto":"","analista":""},"11:30":{"nome":"","assunto":"","analista":""}}}];
 
@@ -785,7 +758,6 @@ function openSlot(dayId, hora) {
   document.getElementById('slot-hora').value = hora;
   document.getElementById('slot-nome').value = slot.nome;
   document.getElementById('slot-assunto').value = slot.assunto;
-  document.getElementById('slot-agendadopor').value = slot.agendadopor || '';
   document.getElementById('modal-slot-title').textContent =
     slot.nome ? 'Editar agendamento' : 'Agendar horário';
 
@@ -799,7 +771,7 @@ function salvarSlot() {
   if (!nome) { toast('Informe o nome do requerente', true); return; }
   const { dayId, hora } = editCtx;
   const day = DAYS.find(d => d.id === dayId);
-  day.slots[hora] = { nome, assunto: document.getElementById('slot-assunto').value.trim(), analista: selAnalistaVal, agendadopor: document.getElementById('slot-agendadopor').value.trim() };
+  day.slots[hora] = { nome, assunto: document.getElementById('slot-assunto').value.trim(), analista: selAnalistaVal };
   saveDays();
   closeModal('overlay-slot');
   toast('Agendamento salvo ✓');
@@ -976,7 +948,6 @@ function renderAgenda() {
         } else {
           html += '<div class="slot-nome">' + s.nome + '</div>';
           if (s.assunto) html += '<div class="slot-assunto">' + s.assunto + '</div>';
-          if (s.agendadopor) html += '<div class="slot-agendadopor">por ' + s.agendadopor + '</div>';
         }
         html += '</div>' + badgeHtml(s.analista);
         if (!isLivre && !isPast) html += `<button class="slot-rm" onclick="limparSlot('${day.id}','${s.h}',event)" title="Remover">×</button>`;
@@ -1243,18 +1214,17 @@ function render() {
   if (currentView === 'agenda') renderAgenda();
   if (currentView === 'painel') renderPainel();
   if (currentView === 'livres') renderLivres();
-  if (currentView === 'config') renderConfig();
 }
 
 function setView(v) {
   currentView = v;
-  ['agenda','painel','livres','config'].forEach(x => {
+  ['agenda','painel','livres'].forEach(x => {
     document.getElementById(`view-${x}`).style.display = x===v?'block':'none';
     document.getElementById(`btn-${x}`).classList.toggle('active', x===v);
   });
   const fw = document.getElementById('filters-wrap');
   if (fw) {
-    const showFilters = (v === 'agenda');
+    const showFilters = v === 'agenda';
     fw.style.display = showFilters ? 'block' : 'none';
     fw.style.visibility = showFilters ? 'visible' : 'hidden';
     fw.style.height = showFilters ? '' : '0';
@@ -1320,132 +1290,6 @@ function initTheme() {
   });
 }
 
-
-// ── RENDER CONFIG ──────────────────────────────────────────────────────────
-function renderConfig() {
-  let html = '<div class="config-wrap">';
-
-  // ── Analistas ──
-  html += '<div class="config-section">';
-  html += '<div class="config-title">👥 Analistas</div>';
-  html += '<div class="config-desc">Gerencie a lista de analistas que aparecem no app. Alterações salvam automaticamente.</div>';
-  html += '<div class="config-list" id="analistas-list">';
-  ANALISTAS.forEach((an, i) => {
-    const cor = CORES_AN[an] || 'var(--accent)';
-    html += `<div class="config-item">
-      <span class="config-badge" style="background:${CORES_BG[an]||'var(--border)'};color:${cor}">${an}</span>
-      <button class="config-rm" onclick="removerAnalista(${i})" title="Remover">×</button>
-    </div>`;
-  });
-  html += '</div>';
-  html += '<div class="config-add-row">';
-  html += '<input class="form-input" id="novo-analista" placeholder="Nome do novo analista" style="flex:1" onkeydown="if(event.key===\'Enter\')addAnalista()">';
-  html += '<button class="btn-primary" style="white-space:nowrap;padding:10px 18px" onclick="addAnalista()">+ Adicionar</button>';
-  html += '</div></div>';
-
-  // ── Quem pode agendar ──
-  html += '<div class="config-section">';
-  html += '<div class="config-title">✍️ Quem agenda</div>';
-  html += '<div class="config-desc">Lista de pessoas que podem fazer agendamentos. Aparece no campo "Agendado por" ao criar um horário.</div>';
-  const agendadores = loadAgendadores();
-  html += '<div class="config-list" id="agendadores-list">';
-  agendadores.forEach((ag, i) => {
-    html += `<div class="config-item">
-      <span class="config-badge" style="background:var(--border);color:var(--text)">${ag}</span>
-      <button class="config-rm" onclick="removerAgendador(${i})" title="Remover">×</button>
-    </div>`;
-  });
-  html += '</div>';
-  html += '<div class="config-add-row">';
-  html += '<input class="form-input" id="novo-agendador" placeholder="Nome de quem agenda" style="flex:1" onkeydown="if(event.key===\'Enter\')addAgendador()">';
-  html += '<button class="btn-primary" style="white-space:nowrap;padding:10px 18px" onclick="addAgendador()">+ Adicionar</button>';
-  html += '</div></div>';
-
-  html += '</div>';
-  document.getElementById('view-config').innerHTML = html;
-}
-
-// ── CONFIG HELPERS ──────────────────────────────────────────────────────────
-const AGENDADORES_KEY = 'seplan_agendadores';
-
-function loadAgendadores() {
-  try { return JSON.parse(localStorage.getItem(AGENDADORES_KEY)) || []; }
-  catch { return []; }
-}
-function saveAgendadores(list) { localStorage.setItem(AGENDADORES_KEY, JSON.stringify(list)); }
-
-function addAnalista() {
-  const input = document.getElementById('novo-analista');
-  const nome = input.value.trim();
-  if (!nome) { toast('Informe o nome do analista', true); return; }
-  if (ANALISTAS.includes(nome)) { toast('Analista já existe', true); return; }
-  ANALISTAS.push(nome);
-  // Salva no Firebase
-  window._fb.saveAnalistas(ANALISTAS);
-  input.value = '';
-  toast(`${nome} adicionado ✓`);
-  renderConfig();
-  rebuildFilters();
-}
-
-function removerAnalista(idx) {
-  const nome = ANALISTAS[idx];
-  if (!confirm(`Remover ${nome} da lista?`)) return;
-  ANALISTAS.splice(idx, 1);
-  window._fb.saveAnalistas(ANALISTAS);
-  toast(`${nome} removido`);
-  renderConfig();
-  rebuildFilters();
-}
-
-function addAgendador() {
-  const input = document.getElementById('novo-agendador');
-  const nome = input.value.trim();
-  if (!nome) { toast('Informe o nome', true); return; }
-  const list = loadAgendadores();
-  if (list.includes(nome)) { toast('Já existe', true); return; }
-  list.push(nome);
-  saveAgendadores(list);
-  input.value = '';
-  toast(`${nome} adicionado ✓`);
-  renderConfig();
-}
-
-function removerAgendador(idx) {
-  const list = loadAgendadores();
-  const nome = list[idx];
-  if (!confirm(`Remover ${nome}?`)) return;
-  list.splice(idx, 1);
-  saveAgendadores(list);
-  toast(`${nome} removido`);
-  renderConfig();
-}
-
-function rebuildFilters() {
-  // Reconstrói chips de filtro na agenda
-  const wrap = document.getElementById('filters');
-  if (!wrap) return;
-  let html = `<button class="filter-chip active" onclick="setAnalista('todos')" id="chip-todos">Todos</button>`;
-  ANALISTAS.forEach(an => {
-    html += `<button class="filter-chip" onclick="setAnalista('${an}')" id="chip-${an}">${an}</button>`;
-  });
-  html += `<button class="filter-chip" style="border-color:#3ecf7840;color:#3ecf78" onclick="setAnalista('livres')" id="chip-livres">Só livres</button>`;
-  wrap.innerHTML = html;
-  // Reconstrói grid de analistas no modal
-  rebuildAnalistaGrid();
-}
-
-function rebuildAnalistaGrid() {
-  const grid = document.getElementById('analista-grid');
-  if (!grid) return;
-  let html = `<div class="analista-opt nenhum" onclick="selAnalista('')" id="opt-nenhum">—</div>`;
-  ANALISTAS.forEach(an => {
-    const cor = CORES_AN[an] || 'var(--accent)';
-    html += `<div class="analista-opt" style="color:${cor}" onclick="selAnalista('${an}')" id="opt-${an}">${an}</div>`;
-  });
-  grid.innerHTML = html;
-}
-
 // ── INIT ───────────────────────────────────────────────────────────────────
 initTheme();
 
@@ -1455,13 +1299,6 @@ document.getElementById('view-agenda').innerHTML = `
     <div class="empty-icon" style="animation:spin 1s linear infinite;display:inline-block">⏳</div>
     <div class="empty-text" style="margin-top:12px">Conectando ao banco de dados...</div>
   </div>`;
-
-// Listener analistas do Firebase
-window._fb.listenAnalistas(function(data) {
-  if (data && Array.isArray(data) && data.length > 0) {
-    ANALISTAS = data;
-  }
-});
 
 // Listener Firebase em tempo real
 window._fb.listenDays(function(data) {
